@@ -20,3 +20,5 @@ class dotProductAttention():
         self.outDense = tf.keras.layers.Dense(d_model)
 
         
+class multiHeadedAttention():
+    pass
