@@ -75,13 +75,13 @@ class memoryAttention(tf.Module):
 
         return output
 
-class MultiHeadedAttention(Module):
+class MultiHeadedAttention(tf.Module):
     '''
     This acts as the multiheaded attention layer with Dropout and normalization
     '''
 
     def __init__(self, d_model, d_k, d_v, h, dropout=.1, identity_map_reordering = False,
-                    attention_module_kwargs=None):
+                     attention_module_kwargs=None):
         super(MultiHeadedAttention, self).__init__()
 
         self.identity_map_reordering = identity_map_reordering
@@ -89,7 +89,6 @@ class MultiHeadedAttention(Module):
 
         self.dropout = tf.keras.layers.Dropout(dropout)
         self.layer_norm = tf.keras.layers.LayerNormalization()
-
     def __call__(self, queries, keys, values, attention_mask=None, attention_weights=None):
         if self.identity_map_reordering:
             q_norm = self.layer_norm(queries)
