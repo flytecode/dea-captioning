@@ -69,24 +69,9 @@ class CocoLoader:
                     full_sentences[j][i] = self.vocab_dict["<UNK>"]
                 else:
                     full_sentences[j][i] = self.vocab_dict[word]
-        
-        image_ids = [banger["image_id"] for banger in self.dataset.loadAnns(ann_ids)]
-        images = self.dataset.loadImgs(image_ids)
+    
 
-        path_root = "train2014/"
-        images = [path_root + image["file_name"] for image in images]
-        images = [np.asarray(PIL.Image.open(image), dtype=int)
-                for image in images]
-        
-        for i, image in enumerate(images):
-            images[i] = np.pad(
-                image, 
-                ((0, 640 - image.shape[0]), (0, 640 - image.shape[1]), (0, 0)),
-                constant_values=0)
-        
-        images = np.stack(images)
-
-        return tf.one_hot(np.array(full_sentences), self.vocab_size), images
+        return tf.one_hot(np.array(full_sentences), self.vocab_size)
 
 loader = CocoLoader("annotations/captions_train2014.json", "annotations/coco_train_ids.npy")
 print(loader.vocab_dict)
