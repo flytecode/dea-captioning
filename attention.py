@@ -3,7 +3,7 @@ import numpy as np
 import math
 import random
 
-class dotProductAttention(tf.Module):
+class memoryAttention(tf.Module):
 
     def __init__(self, d_model, d_k, d_v, h, m):
         '''
@@ -13,7 +13,7 @@ class dotProductAttention(tf.Module):
         :param h: Number of heads
         :param m: Number of Memory Slots
         '''
-        super(dotProductAttention, self).__init__()
+        super(memoryAttention, self).__init__()
 
         self.queryDense = tf.keras.layers.Dense(h * d_k)
         self.keysDense = tf.keras.layers.Dense(h * d_k)
@@ -74,3 +74,32 @@ class dotProductAttention(tf.Module):
         output - self.outDense(output)
 
         return output
+
+class MultiHeadedAttention(Module):
+    '''
+    This acts as the multiheaded attention layer with Dropout and normalization
+    '''
+
+    def __init__(self, d_model, d_k, d_v, h, dropout=.1, identity_map_reordering = False,
+                    attention_module_kwargs=None):
+        super(MultiHeadedAttention, self).__init__()
+
+        self.identity_map_reordering = identity_map_reordering
+        self.attention = memoryAttention(d_model = d_model, d_k=d_k, d_v=d_v, h=h)
+
+        self.dropout = tf.keras.layers.Dropout(dropout)
+        self.layer_norm = tf.keras.layers.LayerNormalization()
+
+    def __call__(self, queries, keys, values, attention_mask=None, attention_weights=None):
+        if self.identity_map_reordering:
+            q_norm = self.layer_norm(queries)
+            k_norm = self.layer_norm(keys)
+            v_norm = self.layer_norm(values)
+
+            out = self.attention(q_norm, k_norm, v_norm, attention_mask, attention_weights)
+            out = queries + self.dropout(tf.nn.relu(out))
+        else:
+            out = self.attention(queries, keys, values, attention_mask, attention_weights)
+            out = self.dropout(out)
+            out = self.layer_norm(queries+out)
+        return out
