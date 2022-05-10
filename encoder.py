@@ -1,7 +1,7 @@
 from numpy import expand_dims
 import tensorflow as tf
 from attention import MultiHeadAttention
-from utils import FeedForwardLayer
+from utils import PositionWiseFeedForward
 
 class EncoderLayer():
 
