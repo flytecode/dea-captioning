@@ -163,7 +163,14 @@ training_dataset = training_dataset.map(lambda item1, item2: tf.numpy_function(
     num_parallel_calls=tf.data.AUTOTUNE)
 
 training_dataset = training_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+
 training_dataset = training_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
 
 
+def train():
+    pass
+
+
+if __name__ == "__main__":
+    train()
