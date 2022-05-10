@@ -6,6 +6,10 @@ import numpy as np
 import os, time, json
 from PIL import Image
 from tqdm import tqdm
+import encoder
+import decoder
+import attention
+import transformer
 
 BATCH_SIZE = 24
 
@@ -46,7 +50,7 @@ random.shuffle(image_path)
 
 ###CHANGE 6000 TO TRAIN ON MORE IMAGES
 
-train_image_paths = image_path[:6000]
+train_image_paths = image_path[:10000]
 
 training_captions = []
 img_name_vector = []
@@ -92,16 +96,19 @@ for image, path in tqdm(image_dataset):
 caption_dataset = tf.data.Dataset.from_tensor_slices(training_captions)
 
 def standardize(inputs):
+    
     inputs = tf.strings.lower(inputs)
     return tf.strings.regex_replace(inputs, 
                                 r"!\"#$%&\(\)\*\+.,-/:;=?@\[\\\]^_`{|}~", "")
 
 
-max_length = 25
+max_length = 48
 vocab_size = 6000
+
 tokenizer = tf.keras.layers.TextVectorization(max_tokens = vocab_size,
                                                 standardize=standardize,
                                                 output_sequence_length=max_length)
+
 tokenizer.adapt(caption_dataset)
 
 caption_vector = caption_dataset.map(lambda x: tokenizer(x))
@@ -114,6 +121,7 @@ index_to_word = tf.keras.layers.StringLookup(mask_token="",
                 invert=True)
 
 image_to_caption_vector = collections.defaultdict(list)
+
 for image, caption in zip(img_name_vector, caption_vector):
     image_to_caption_vector[image].append(caption)
 
@@ -157,6 +165,8 @@ attention_features_shape = 64
 def map_function(image_name, caption):
     image_tensor = np.load(image_name.decode("utf-8")+".npy")
     return image_tensor, caption
+
+
 training_dataset = tf.data.Dataset.from_tensor_slices((image_name_train, caption_train))
 training_dataset = training_dataset.map(lambda item1, item2: tf.numpy_function(
     map_function, [item1, item2], [tf.float32, tf.int64]),
@@ -168,9 +178,40 @@ training_dataset = training_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
 
 
-def train():
-    pass
+optimizer = tf.keras.optimizers.Adam()
+loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
 
-if __name__ == "__main__":
-    train()
+encoder = encoder.MemoryAugmentedEncoder(3,0, "")
+
+
+decoder = decoder.MeshedDecoder(vocab_size=vocab_size, max_len=max_length, 
+            N_dec=3, padding_index=word_to_index(""))
+
+model = transformer.Transformer(word_to_index("<start>"), encoder, decoder)
+
+
+def train_step(input_image, target):
+    print("Train Step")
+    loss = 0
+    dec_input = tf.expand_dims([word_to_index('<start>')] * target.shape[0], 1)
+
+    with tf.GradientTape() as tape:
+        output = model(input_image, target)
+        loss+= loss_function(target, output)
+    
+
+    gradients = tape.gradient(loss, model.trainable_variables)
+
+    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+    return loss, loss
+
+
+total_loss = 0
+all_losses = []
+for (batch, (image_tensor, target_caption)) in enumerate(training_dataset):
+    batch_loss, totall_loss = train_step(image_tensor, target_caption)
+    total_loss+=totall_loss
+    all_losses.append(batch_loss)
+print(all_losses)

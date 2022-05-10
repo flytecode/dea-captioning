@@ -1,17 +1,17 @@
 from numpy import expand_dims
 import tensorflow as tf
-from attention import MultiHeadAttention
+from attention import MultiHeadedAttention
 from utils import PositionWiseFeedForward
 
 class EncoderLayer():
 
     def __init__(self, d_model=512, d_k=64, d_v=64, h=8, d_ff=2048, dropout=.1):
         
-        self.multi_attention = MultiHeadAttention(d_model, d_k, d_v, h, dropout)
-        self.position_feed_forward = FeedForwardLayer(d_model, d_ff, dropout)
+        self.multi_attention = MultiHeadedAttention(d_model, d_k, d_v, h, dropout)
+        self.position_feed_forward = PositionWiseFeedForward(d_model, d_ff, dropout)
         pass
 
-    def call(self, queries, keys, values, mask=None, attention_weights=None):
+    def __call__(self, queries, keys, values, mask=None, attention_weights=None):
 
         attention = self.multi_attention(queries, keys, values, mask, attention_weights)
         return self.position_feed_forward(attention)
@@ -23,7 +23,7 @@ class MultiLevelEncoder():
         self.dropout = dropout
         self.padding_idx = padding_idx
 
-        self.layers = [
+        self.mult_layers = [
             EncoderLayer(d_model, d_k, d_v, h, d_ff, dropout)
             for _ in range(N)]
     
@@ -36,7 +36,7 @@ class MultiLevelEncoder():
 
         outs = []
         out = input
-        for l in self.layers:
+        for l in self.mult_layers:
             out = l(out, out, out, attention_mask, attention_weights)
             outs.append(expand_dims(out, 1))
 
@@ -44,16 +44,16 @@ class MultiLevelEncoder():
         return outs, attention_mask
 
 class MemoryAugmentedEncoder(MultiLevelEncoder):
-    def __init__(self, N, padding_idx, d_in=2048):
+    def __init__(self, N, padding_idx, d_in=2048, **kwargs):
         super(MemoryAugmentedEncoder, self).__init__(N, padding_idx)
-        self.fc = tf.keras.Sequential([
-            tf.keras.layers.Dense(self.d_model, activation='relu'),
-            tf.keras.layers.Dropout(self.dropout),
-            tf.keras.layers.Normalize()
-        ])
+        self.dense = tf.keras.layers.Dense(self.d_model, activation='relu')
+        self.dropout = tf.keras.layers.Dropout(self.dropout)
+        self.norm  = tf.keras.layers.LayerNormalization()
+    
 
-    def forward(self, input, attention_weights=None):
-        out = self.fc(input)
-        return super(MemoryAugmentedEncoder, self).forward(
-            out, attention_weights=attention_weights)
+    def __call__(self, input, attention_weights=None):
+        dense = self.dense(input)
+        dropout = self.dropout(dense)
+        norm = self.norm(dropout)
+        return super(MemoryAugmentedEncoder, self).forward(norm, attention_weights)
 
