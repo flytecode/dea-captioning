@@ -102,8 +102,8 @@ def standardize(inputs):
                                 r"!\"#$%&\(\)\*\+.,-/:;=?@\[\\\]^_`{|}~", "")
 
 
-max_length = 48
-vocab_size = 6000
+max_length = 24
+vocab_size = 5000
 
 tokenizer = tf.keras.layers.TextVectorization(max_tokens = vocab_size,
                                                 standardize=standardize,
@@ -195,8 +195,9 @@ def train_step(input_image, target):
     dec_input = tf.expand_dims([word_to_index('<start>')] * target.shape[0], 1)
 
     with tf.GradientTape() as tape:
-        output = model(input_image, target)
-        loss = loss_function(target, output)
+        enc_output, mask_enc = encoder(input_image)
+        dec_output = decoder(target, enc_output, mask_enc)
+        loss = loss_function(target, dec_output)
     
 
     trainable_variables  = encoder.trainable_variables+ decoder.trainable_variables
@@ -212,7 +213,6 @@ all_losses = [100]
 for (batch, (image_tensor, target_caption)) in enumerate(training_dataset):
     batch_loss, totall_loss = train_step(image_tensor, target_caption)
     total_loss+=totall_loss
-    print(target_caption)
     if totall_loss-.5 > min(all_losses):
         print("Something is wrong we hit batch", batch)
     else:

@@ -7,26 +7,32 @@ from attention import MultiHeadedAttention, MemoryAttention
 from utils import SinEncoding, sinusoidal_encoding, PositionWiseFeedForward
 
 
-class MeshedDecoderLayer(tf.Module):
+class MeshedDecoderLayer(tf.keras.layers.Layer):
     def __init__(self, d_model=512, d_k=64, d_v=64, h=8, d_ff=2048,
                     dropout=.1, self_att_module=None,
                     enc_att_module=None, self_att_module_kwargs=None, enc_att_module_kwargs=None):
         super(MeshedDecoderLayer, self).__init__()
-        self.self_att = MultiHeadedAttention(d_model, d_k, d_v, h, dropout, 
+        self.self_att = MultiHeadedAttention(d_model, d_k, d_v, h, 40, dropout, 
                             
                             attention_module_kwargs=self_att_module_kwargs)
-        self.enc_att = MultiHeadedAttention(d_model, d_k, d_v, h, dropout,
+        self.enc_att = MultiHeadedAttention(d_model, d_k, d_v, h, 40, dropout,
                                           
                                           attention_module_kwargs=enc_att_module_kwargs)
-        self.pwff = PositionWiseFeedForward(d_model, d_ff, dropout)
+        self.dense1 = tf.keras.layers.Dense(d_ff, name="FirstDenseDEcode")
+        self.dense2 = tf.keras.layers.Dense(d_model, name="SecondDenseDecode")
+        self.dropout1 = tf.keras.layers.Dropout(dropout)
+        self.dropout2 = tf.keras.layers.Dropout(dropout)
+        self.layer_normalize = tf.keras.layers.LayerNormalization(name="NormalizeHereDecode")
 
-        self.fc_alpha1 = tf.keras.layers.Dense(d_model)
+
+        self.fc_alpha1 = tf.keras.layers.Dense(d_model, name="Dense in Decoder")
         self.fc_alpha2 = tf.keras.layers.Dense(d_model)
         self.fc_alpha3 = tf.keras.layers.Dense(d_model)
 
     def __call__(self, input, enc_output, mask_pad, mask_self_att, mask_enc_att):
         self_att = self.self_att(input, input, input, mask_self_att)
         mask_pad = tf.cast(mask_pad, dtype=tf.float32)
+        mask_enc_att = tf.cast(mask_enc_att, dtype=tf.float32)
         self_att *= mask_pad
 
         enc_att1 = self.enc_att(self_att, enc_output[:, 0], enc_output[:,0], 
@@ -43,10 +49,12 @@ class MeshedDecoderLayer(tf.Module):
         enc_attention = (enc_att1*alphaA+enc_att2*alphaB+enc_att3*alphaC)/np.sqrt(3)
         enc_attention *= mask_pad
 
-        forward = self.pwff(enc_attention)
-        forward *= mask_pad
+        out = self.dense2(self.dropout2(tf.nn.relu(self.dense1(enc_attention))))
+        out = self.dropout1(out)
+        out = self.layer_normalize(enc_attention+out)
+        out *= mask_pad
 
-        return forward
+        return out
 
 class MeshedDecoder(tf.keras.Model):
     def __init__(self, vocab_size, max_len, N_dec, padding_index, d_model=512, d_k=64,
