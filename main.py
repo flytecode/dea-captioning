@@ -192,13 +192,11 @@ model = transformer.Transformer(word_to_index("<start>"), encoder, decoder)
 
 
 def train_step(input_image, target):
-    print("Train Step")
-    loss = 0
     dec_input = tf.expand_dims([word_to_index('<start>')] * target.shape[0], 1)
 
     with tf.GradientTape() as tape:
         output = model(input_image, target)
-        loss+= loss_function(target, output)
+        loss = loss_function(target, output)
     
 
     trainable_variables  = encoder.trainable_variables+ decoder.trainable_variables

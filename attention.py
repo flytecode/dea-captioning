@@ -89,7 +89,7 @@ class MultiHeadedAttention(tf.keras.Model):
     This acts as the multiheaded attention layer with Dropout and normalization
     '''
 
-    def __init__(self, d_model, d_k, d_v, h, dropout=.1, identity_map_reordering = False,
+    def __init__(self, d_model, d_k, d_v, h, m, dropout=.1, identity_map_reordering = False,
                      attention_module_kwargs=None):
         super(MultiHeadedAttention, self).__init__()
 
