@@ -50,7 +50,7 @@ random.shuffle(image_path)
 
 ###CHANGE 6000 TO TRAIN ON MORE IMAGES
 
-train_image_paths = image_path[:10000]
+train_image_paths = image_path[:66]
 
 training_captions = []
 img_name_vector = []
@@ -146,7 +146,7 @@ caption_validation = []
 for validation_image in image_name_validation_keys:
     caption_length = len(image_to_caption_vector[validation_image])
     image_name_validation.extend([validation_image]*caption_length)
-    caption_validation.extend([validation_image])
+    caption_validation.extend(image_to_caption_vector[validation_image])
 
 print(len(image_name_train), len(caption_train), len(image_name_validation), len(caption_validation))
 
@@ -201,17 +201,23 @@ def train_step(input_image, target):
         loss+= loss_function(target, output)
     
 
-    gradients = tape.gradient(loss, model.trainable_variables)
+    trainable_variables  = encoder.trainable_variables+ decoder.trainable_variables
+    gradients = tape.gradient(loss, trainable_variables)
 
-    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    optimizer.apply_gradients(zip(gradients, trainable_variables))
 
     return loss, loss
 
 
 total_loss = 0
-all_losses = []
+all_losses = [100]
 for (batch, (image_tensor, target_caption)) in enumerate(training_dataset):
     batch_loss, totall_loss = train_step(image_tensor, target_caption)
     total_loss+=totall_loss
-    all_losses.append(batch_loss)
-print(all_losses)
+    print(target_caption)
+    if totall_loss-.5 > min(all_losses):
+        print("Something is wrong we hit batch", batch)
+    else:
+        all_losses.append(batch_loss)
+print(batch)
+print(all_losses[:40])
