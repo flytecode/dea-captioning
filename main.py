@@ -11,6 +11,21 @@ import decoder
 import attention
 import transformer
 
+def save_model_weights(model):
+    """
+    Save trained VAE model weights to model_ckpts/
+
+    Inputs:
+    - model: Trained VAE model.
+    - args: All arguments.
+    """
+    model_flag = "Meshed Memory Transformer"
+    output_dir = os.path.join("model_ckpts", model_flag)
+    output_path = os.path.join(output_dir, model_flag)
+    os.makedirs("model_ckpts", exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
+    model.save_weights(output_path)
+
 BATCH_SIZE = 24
 
 annotation_folder = '/annotations/'
@@ -102,8 +117,8 @@ def standardize(inputs):
                                 r"!\"#$%&\(\)\*\+.,-/:;=?@\[\\\]^_`{|}~", "")
 
 
-max_length = 24
-vocab_size = 5000
+max_length = 15
+vocab_size = 3000
 
 tokenizer = tf.keras.layers.TextVectorization(max_tokens = vocab_size,
                                                 standardize=standardize,
@@ -152,15 +167,15 @@ print(len(image_name_train), len(caption_train), len(image_name_validation), len
 
 
 
-BATCH_SIZE=64
+BATCH_SIZE=128
 
 BUFFER_SIZE = 1000
-embedding_dimensions = 128
+embedding_dimensions = 8
 units = 512
 iterations = len(image_name_train)//BATCH_SIZE
 
 features_shape = 2048
-attention_features_shape = 64
+attention_features_shape = 8
 
 def map_function(image_name, caption):
     image_tensor = np.load(image_name.decode("utf-8")+".npy")
@@ -178,7 +193,8 @@ training_dataset = training_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
 
 
-optimizer = tf.keras.optimizers.Adam()
+optimizer = tf.keras.optimizers.Adam(learning_rate=5e-5, beta_1=.9, beta_2=.98)
+# ^ Values from their model. Seems insane, I know. 
 loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
 
@@ -213,7 +229,7 @@ all_losses = [100]
 for (batch, (image_tensor, target_caption)) in enumerate(training_dataset):
     batch_loss, totall_loss = train_step(image_tensor, target_caption)
     total_loss+=totall_loss
-    if totall_loss-.75 > min(all_losses):
-        print("Something is wrong we hit batch", batch)
-    else:
-        all_losses.append(batch_loss)
+    print(f"Loss for batch {batch}: {totall_loss}")
+    all_losses.append(batch_loss)
+
+save_model_weights(model)
