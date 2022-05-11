@@ -4,6 +4,7 @@ import collections
 import random
 import numpy as np
 import os, time, json
+import sys
 from PIL import Image
 from tqdm import tqdm
 import encoder
@@ -43,11 +44,12 @@ if not os.path.exists(os.path.abspath(".")+image_folder):
                                         cache_subdir= os.path.abspath("."),
                                         origin = "http://images.cocodataset.org/zips/train2014.zip",
                                         extract=True)
-    path = os.path.dirname(image_zip)+image_folder
+    # path = os.path.dirname(image_zip)+image_folder
     os.remove(image_zip)
 else:
     path = os.path.abspath(".")+image_folder
 
+print("Onto Annotations")
 
 annotation_file = os.path.abspath(".")+"/annotations/captions_train2014.json"
 with open(annotation_file, "r") as annot_file:
@@ -188,24 +190,22 @@ training_dataset = training_dataset.map(lambda item1, item2: tf.numpy_function(
     num_parallel_calls=tf.data.AUTOTUNE)
 
 training_dataset = training_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-
 training_dataset = training_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
-
 
 
 optimizer = tf.keras.optimizers.Adam(learning_rate=5e-5, beta_1=.9, beta_2=.98)
 # ^ Values from their model. Seems insane, I know. 
 loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-
 encoder = encoder.MemoryAugmentedEncoder(3,0, "")
-
 
 decoder = decoder.MeshedDecoder(vocab_size=vocab_size, max_len=max_length, 
             N_dec=3, padding_index=word_to_index(""))
 
 model = transformer.Transformer(word_to_index("<start>"), encoder, decoder)
 
+if True:
+    model.load_weights("model_ckpts")
 
 def train_step(input_image, target):
     dec_input = tf.expand_dims([word_to_index('<start>')] * target.shape[0], 1)
@@ -222,7 +222,6 @@ def train_step(input_image, target):
     optimizer.apply_gradients(zip(gradients, trainable_variables))
 
     return loss, loss
-
 
 total_loss = 0
 all_losses = [100]
