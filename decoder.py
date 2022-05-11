@@ -3,8 +3,8 @@ import tensorflow as tf
 import numpy as np
 
 
-from attention import MultiHeadedAttention, MemoryAttention
-from utils import SinEncoding, sinusoidal_encoding, PositionWiseFeedForward
+from attention import MultiHeadedAttention
+from utils import SinEncoding
 
 
 class MeshedDecoderLayer(tf.keras.layers.Layer):

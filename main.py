@@ -50,7 +50,7 @@ random.shuffle(image_path)
 
 ###CHANGE 6000 TO TRAIN ON MORE IMAGES
 
-train_image_paths = image_path[:66]
+train_image_paths = image_path[:10000]
 
 training_captions = []
 img_name_vector = []
@@ -213,9 +213,7 @@ all_losses = [100]
 for (batch, (image_tensor, target_caption)) in enumerate(training_dataset):
     batch_loss, totall_loss = train_step(image_tensor, target_caption)
     total_loss+=totall_loss
-    if totall_loss-.5 > min(all_losses):
+    if totall_loss-.75 > min(all_losses):
         print("Something is wrong we hit batch", batch)
     else:
         all_losses.append(batch_loss)
-print(batch)
-print(all_losses[:40])
