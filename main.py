@@ -44,7 +44,7 @@ if not os.path.exists(os.path.abspath(".")+image_folder):
                                         cache_subdir= os.path.abspath("."),
                                         origin = "http://images.cocodataset.org/zips/val2014.zip",
                                         extract=True)
-    # path = os.path.dirname(image_zip)+image_folder
+    path = os.path.dirname(image_zip)+image_folder
     os.remove(image_zip)
 else:
     path = os.path.abspath(".")+image_folder
