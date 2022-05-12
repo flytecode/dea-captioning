@@ -67,7 +67,7 @@ random.shuffle(image_path)
 
 ###CHANGE 6000 TO TRAIN ON MORE IMAGES
 
-train_image_paths = image_path[:10000]
+train_image_paths = image_path[:100]
 
 training_captions = []
 img_name_vector = []
