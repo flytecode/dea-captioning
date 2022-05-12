@@ -204,8 +204,8 @@ decoder = decoder.MeshedDecoder(vocab_size=vocab_size, max_len=max_length,
 
 model = transformer.Transformer(word_to_index("<start>"), encoder, decoder)
 
-# if True:
-#     model.load_weights("model_ckpts")
+if True:
+    model.load_weights("model_ckpts")
 
 def train_step(input_image, target):
     dec_input = tf.expand_dims([word_to_index('<start>')] * target.shape[0], 1)
