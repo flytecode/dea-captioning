@@ -12,7 +12,7 @@ import decoder
 import attention
 import transformer
 
-def save_model_weights(model):
+def save_model_weights(model, saving):
     """
     Save trained VAE model weights to model_ckpts/
 
@@ -25,7 +25,10 @@ def save_model_weights(model):
     output_path = os.path.join(output_dir, model_flag)
     os.makedirs("model_ckpts", exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
-    model.save_weights(output_path)
+    if not saving:
+        model.load_weights(output_path)
+    else:
+        model.save_weights(output_path)
 
 BATCH_SIZE = 24
 
@@ -204,8 +207,7 @@ decoder = decoder.MeshedDecoder(vocab_size=vocab_size, max_len=max_length,
 
 model = transformer.Transformer(word_to_index("<start>"), encoder, decoder)
 
-if True:
-    model.load_weights("model_ckpts")
+save_model_weights(model, False)
 
 def train_step(input_image, target):
     dec_input = tf.expand_dims([word_to_index('<start>')] * target.shape[0], 1)
@@ -231,4 +233,4 @@ for (batch, (image_tensor, target_caption)) in enumerate(training_dataset):
     print(f"Loss for batch {batch}: {totall_loss}")
     all_losses.append(batch_loss)
 
-save_model_weights(model)
+save_model_weights(model, True)
