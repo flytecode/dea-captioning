@@ -1,7 +1,6 @@
 
 import tensorflow as tf
 from attention import MultiHeadedAttention
-from utils import PositionWiseFeedForward
 
 import tensorflow as tf
 from attention import MultiHeadedAttention
