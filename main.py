@@ -35,14 +35,14 @@ if not os.path.exists(os.path.abspath('.') + annotation_folder):
                                            cache_subdir=os.path.abspath('.'),
                                            origin='http://images.cocodataset.org/annotations/annotations_trainval2014.zip',
                                            extract=True)
-  annotation_file = os.path.dirname(annotation_zip)+'/annotations/captions_train2014.json'
+  annotation_file = os.path.dirname(annotation_zip)+'/annotations/captions_val2014.json'
   os.remove(annotation_zip)
 
-image_folder = "/train2014/"
+image_folder = "/val2014/"
 if not os.path.exists(os.path.abspath(".")+image_folder):
-    image_zip = tf.keras.utils.get_file("train2014.zip",
+    image_zip = tf.keras.utils.get_file("val2014.zip",
                                         cache_subdir= os.path.abspath("."),
-                                        origin = "http://images.cocodataset.org/zips/train2014.zip",
+                                        origin = "http://images.cocodataset.org/zips/val2014.zip",
                                         extract=True)
     # path = os.path.dirname(image_zip)+image_folder
     os.remove(image_zip)
@@ -51,14 +51,14 @@ else:
 
 print("Onto Annotations")
 
-annotation_file = os.path.abspath(".")+"/annotations/captions_train2014.json"
+annotation_file = os.path.abspath(".")+"/annotations/captions_val2014.json"
 with open(annotation_file, "r") as annot_file:
     annotations = json.load(annot_file)
 
 image_path_to_caption = collections.defaultdict(list)
 for value in annotations["annotations"]:
     caption = f"<start> {value['caption']} <end>"
-    image_path = path+"COCO_train2014_"+"%012d.jpg" % (value["image_id"])
+    image_path = path+"COCO_val2014_"+"%012d.jpg" % (value["image_id"])
     image_path_to_caption[image_path].append(caption)
 
 image_path = list(image_path_to_caption.keys())
